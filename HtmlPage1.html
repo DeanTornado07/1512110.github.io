@@ -1,0 +1,215 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Video/Canvas Demo 1</title>
+  
+</head>
+<body>
+    <h1>1512110 - Vũ Hoàng Điền - "This is me when finish deadline"</h1>
+    <canvas id="c" width="480" height="360"></canvas>
+    <video id="v"  controls loop>
+        <source src="video.mp4" type="video/mp4">
+    </video>
+
+    <script>
+
+document.addEventListener('DOMContentLoaded', function(){
+	var v = document.getElementById('v');
+	var canvas = document.getElementById('c');
+	var context = canvas.getContext('2d');
+	var back = document.createElement('canvas');
+	var backcontext = back.getContext('2d');
+
+	var cw,ch;
+
+	v.addEventListener('play', function(){
+		cw = v.clientWidth;
+		ch = v.clientHeight;
+		canvas.width = cw;
+		canvas.height = ch;
+		back.width = cw;
+		back.height = ch;
+		draw(v,context,backcontext,cw,ch);
+	},false);
+
+},false);
+
+function draw(v,c,bc,w,h) {
+	if(v.paused || v.ended)	return false;
+	// First, draw it into the backing canvas
+	bc.drawImage(v,0,0,w,h);
+	// Grab the pixel data from the backing canvas
+	var idata = bc.getImageData(0,0,w,h);
+	var data = idata.data;
+	var kernelX = [
+      				[-1, 0, 1],
+      				[-2, 0, 2],
+      				[-1, 0, 1]
+	];
+
+	var kernelY = [
+        [-1, -2, -1],
+        [0, 0, 0],
+        [1, 2, 1]
+	];
+	// Loop through the pixels, turning them grayscale
+	for(var i = 0; i < data.length; i+=4) {
+		var r = data[i];
+		var g = data[i+1];
+		var b = data[i+2];
+		var brightness = (3*r+4*g+b)>>>3;
+		data[i] = brightness;
+		data[i+1] = brightness;
+		data[i + 2] = brightness;
+	}
+	var data2 = [];
+	for (var i = 0; i < data.length; i+=4) {
+	    var row = Math.trunc((i / 4) / w);
+	    var col = (i / 4) % w;
+	    var pixelx = 0;
+	    var pixely = 0;
+	    var x1 = data[((row - 1) * w + col - 1) * 4];
+	    if (x1 == undefined) {
+	        x1 = 0;
+	    }
+	    else {
+	        pixelx = pixelx + kernelX[0][0] * x1;
+	        pixely = pixely + kernelX[0][0] * x1;
+	    }
+	    var x2 = data[((row - 1) * w + col) * 4];
+	    if (x2 == undefined) {
+	        x2 = 0;
+	    }
+	    else {
+	        pixelx = pixelx + kernelX[0][1] * x2;
+	        pixely = pixely + kernelX[0][1] * x2;
+	    }
+	    var x3 = data[((row - 1) * w + col + 1) * 4];
+	    if (x3 == undefined) {
+	        x3 = 0;
+	    }
+	    else {
+	        pixelx = pixelx + kernelX[0][2] * x3;
+	        pixely = pixely + kernelX[0][2] * x3;
+	    }
+	    var x4 = data[((row) * w + col - 1) * 4];
+	    if (x4 == undefined) {
+	        x4 = 0;
+	    }
+	    else {
+	        pixelx = pixelx + kernelX[1][0] * x4;
+	        pixely = pixely + kernelX[1][0] * x4;
+	    }
+	    var x5 = data[((row) * w + col) * 4];
+	    if (x5 == undefined) {
+	        x5 = 0;
+	    }
+	    else {
+	        pixelx = pixelx + kernelX[1][1] * x5;
+	        pixely = pixely + kernelX[1][1] * x5;
+	    }
+	    var x6 = data[((row) * w + col + 1) * 4];
+	    if (x6 == undefined) {
+	        x6 = 0;
+	    }
+	    else {
+	        pixelx = pixelx + kernelX[1][2] * x6;
+	        pixely = pixely + kernelX[1][2] * x6;
+	    }
+	    var x7 = data[((row + 1) * w + col - 1) * 4];
+	    if (x7 == undefined) {
+	        x7 = 0;
+	    }
+	    else {
+	        pixelx = pixelx + kernelX[2][0] * x7;
+	        pixely = pixely + kernelX[2][0] * x7;
+	    }
+	    var x8 = data[((row + 1) * w + col) * 4];
+	    if (x8 == undefined) {
+	        x8 = 0;
+	    }
+	    else {
+	        pixelx = pixelx + kernelX[2][1] * x8;
+	        pixely = pixely + kernelX[2][1] * x8;
+	    }
+	    var x9 = data[((row + 1) * w + col + 1) * 4];
+	    if (x9 == undefined) {
+	        x9 = 0;
+	    }
+	    else {
+	        pixelx = pixelx + kernelX[2][2] * x9;
+	        pixely = pixely + kernelX[2][2] * x9;
+	    }
+	    var magnitude = Math.sqrt(pixelx * pixelx + pixely * pixely);
+	    data2[i + 3] = 255;
+	    var threshold = 100;
+	    if (magnitude >= threshold) {
+	        data2[i] = 255;
+	        data2[i + 1] = 255;
+	        data2[i + 2] = 255;
+	    } else {
+	        data2[i] = 0;
+	        data2[i + 1] = 0;
+	        data2[i + 2] = 0;
+	    }
+	}
+	for (var i = 0; i < data.length; i++) {
+	    data[i] = data2[i];
+	}
+	idata.data = data;
+	// Draw the pixels onto the visible canvas
+	c.putImageData(idata,0,0);
+	// Start over!
+	setTimeout(draw,20,v,c,bc,w,h);
+}
+    </script>
+    <style>
+        #c {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin: -180px 0 0 20px;
+        }
+
+        #v {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin: -180px 0 0 -500px;
+        }
+    </style>
+    <style>
+        body {
+            background: rgb(0, 0, 0);
+        }
+
+        h1 {
+            color: bisque;
+            text-align: center;
+        }
+
+        h2 {
+            color: rgb(248, 207, 158);
+            text-align: center;
+        }
+
+
+        #cartoon {
+            position: absolute;
+            top: 18.3%;
+            left: 3%;
+        }
+
+        .footer {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            background-color: rgb(0, 0, 0);
+            color: bisque;
+            text-align: center;
+        }
+    </style>
+
+</body>
+</html>
